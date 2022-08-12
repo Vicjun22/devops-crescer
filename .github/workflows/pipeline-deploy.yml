@@ -1,31 +1,3 @@
-Skip to content
-Search or jump to…
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@Vicjun22 
-franchialan
-/
-aula03-devops-crescer
-Public
-Code
-Issues
-Pull requests
-Actions
-Projects
-Wiki
-Security
-Insights
-aula03-devops-crescer/.github/workflows/pipeline-deploy.yml
-@franchialan
-franchialan update pipeline
-Latest commit a03c2ad 1 minute ago
- History
- 1 contributor
-97 lines (86 sloc)  2.44 KB
-
 name: Ambiente Desenvolvimento
 
 on:  
