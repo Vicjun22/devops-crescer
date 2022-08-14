@@ -75,6 +75,11 @@ jobs:
     - name: Criação e envio da imagem
       uses: docker/build-push-action@v2
       with:
+        registry: registry.heroku.com
+        username: ${{ secrets.HEROKU_EMAIL }}
+        password: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: "crescer-hello-world-java-2022"
+        userdocker: true
         push: true
         tags: registry.heroku.com/lab-devops-project/web:latest
 
