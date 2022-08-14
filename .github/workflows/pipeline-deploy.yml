@@ -1,6 +1,6 @@
 name: Ambiente Desenvolvimento
 
-on:  
+on:
   push:
     branches: [ "main" ]
   pull_request:
@@ -8,95 +8,132 @@ on:
   workflow_dispatch:
 
 jobs:
+
+#  Etapa                   Objetivo                                       Ação
+#  Compilação              -                                              run: mvn -B compile --file pom.xml
+
+#  É a etapa que será executado a compilação do projeto helloWorldJava.
+
   build:
     name: Compilação
     runs-on: ubuntu-latest
 
     steps:
-    - name: Git Checkout
-      uses: actions/checkout@v3
-    - name: Configura JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-        cache: maven
-    - name: Compilação
-      run: mvn -B compile --file pom.xml
-    
+      - name: Git Checkout
+        uses: actions/checkout@v3
+
+      - name: Configura JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilação
+        run: mvn -B compile --file pom.xml
+
+
+  #  Etapa                   Objetivo                                       Ação
+  #  Qualidade de código     -                                              #run: ./mvnw verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+  #                                                                         -Dsonar.projectKey=lab-devops-project
+
+  #  Essa etapa faz a análise estática de código como Sonar
+
   code-quality:
     name: Qualidade de Código
     needs: build
-    runs-on: ubuntu-latest        
-    
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Git Checkout
-      uses: actions/checkout@v3
-    - name: Adiciona permissão para mvnw
-      run: chmod +x mvnw
-    - name: Análise SonarCloud
-      run: ./mvnw verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=lab-devops-project
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        
+      - name: Git Checkout
+        uses: actions/checkout@v3
+
+      - name: Adiciona permissão para mvnw
+        run: chmod +x mvnw
+
+      - name: Análise SonarCloud
+        run: ./mvnw verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=lab-devops-project
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+  #  Etapa                   Objetivo                                       Ação
+  #  Testes automatizados    Essa etapa executará os testes da aplicação    run: mvn -B test --file pom.xml
+
+  #  Essa etapa executará os testes da aplicação.
+
   tests:
     name: Testes automatizados
     needs: code-quality
-    runs-on: ubuntu-latest    
-    
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Git Checkout
-      uses: actions/checkout@v3
-    - name: Configura JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-        cache: maven
-    - name: Testes Unitários
-      run: mvn -B test --file pom.xml
-           
+      - name: Git Checkout
+        uses: actions/checkout@v3
+
+      - name: Configura JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Testes Unitários
+        run: mvn -B test --file pom.xml
+
+
+  #  Etapa                   Objetivo                                       Ação
+  #  Enviar image Heroku     Essa etapa envia a imagem containerizada da    Utilização da Action docker/build-push-action@v3
+  #                          sua aplicação para o Heroku
+
+  #  Essa etapa envia a imagem containerizada da sua aplicação para o Heroku. Essa etapa precisa fazer login no Heroku antes do envio da imagem containerizada da aplicação.
+
   push-image:
     name: Enviar imagem Heroku
     needs: [code-quality, tests ]
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Prepara ambiente Docker
-      uses: docker/setup-buildx-action@v2
-      with:
-        install: true
-    - name: Login no Heroku
-      uses: docker/login-action@v2
-      with:
-        registry: registry.heroku.com
-        username: ${{ secrets.HEROKU_EMAIL }}
-        password: ${{ secrets.HEROKU_API_KEY }}
-    - name: Criação e envio da imagem
-      uses: docker/build-push-action@v2
-      with:
-        registry: registry.heroku.com
-        username: ${{ secrets.HEROKU_EMAIL }}
-        password: ${{ secrets.HEROKU_API_KEY }}
-        heroku_app_name: "crescer-hello-world-java-2022"
-        userdocker: true
-        push: true
-        tags: registry.heroku.com/lab-devops-project/web:latest
+      - name: Prepara ambiente Docker
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+
+      - name: Login no Heroku
+        uses: docker/login-action@v2
+        with:
+          registry: registry.heroku.com
+          username: ${{ secrets.HEROKU_EMAIL }}
+          password: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Criação e envio da imagem
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: registry.heroku.com/crescer-hello-world-java-2022/web:latest
+
+
+  #  Etapa                   Objetivo                                       Ação
+  #  Publicação do ambiente  Essa etapa publica a sua aplicação no Heroku   run: heroku container:release -a lab-devops-project web
+  #  desenvolvimento
+
+  #  Essa etapa publica a sua aplicação no Heroku. Essa etapa precisa fazer login no Heroku antes da publicação.
 
   deploy:
     name: Publica ambiente Desenvolvimento
     needs: push-image
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Login no Heroku
-      uses: docker/login-action@v2
-      with:
-        registry: registry.heroku.com
-        username: ${{ secrets.HEROKU_EMAIL }}
-        password: ${{ secrets.HEROKU_API_KEY }}
-    - name: Publicação
-      run: heroku container:release -a lab-devops-project web 
-      env:
-        HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      - name: Login no Heroku
+        uses: docker/login-action@v2
+        with:
+          registry: registry.heroku.com
+          username: ${{ secrets.HEROKU_EMAIL }}
+          password: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Publicação
+        run: heroku container:release -a crescer-hello-world-java-2022 web
+        env:
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
