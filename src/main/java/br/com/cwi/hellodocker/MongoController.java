@@ -19,7 +19,7 @@ import com.mongodb.client.result.InsertOneResult;
 @RestController()
 @RequestMapping("/mongo")
 public class MongoController {
-    @Value("${mongodb.uri}")
+    @Value("${spring.data.mongodb.uri}")
     private String mongoUri;
 
     @GetMapping("/buscar") 
